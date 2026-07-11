@@ -1,5 +1,9 @@
 import streamlit as st
 import pandas as pd
+import matplotlib
+matplotlib.use("Agg")  # headless backend — Streamlit reruns scripts in worker
+                       # threads; the default GUI (Tk) backend crashes the app
+                       # after a few runs ("main thread is not in main loop").
 import matplotlib.pyplot as plt
 import random
 
@@ -272,6 +276,7 @@ elif page == "Roll Optimizer":
         ax.set_title("RIP-Grade Guillotine Nesting")
 
         st.pyplot(fig)
+        plt.close(fig)  # free the figure — they otherwise accumulate across reruns
 
 # ============================================================
 # PAGE 3 : RIGID BOARD OPTIMIZER
