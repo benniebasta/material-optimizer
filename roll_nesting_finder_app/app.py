@@ -232,6 +232,15 @@ elif page == "Roll Optimizer":
         mode = "Auto Rotate ON" if AUTO_ROTATE else "Auto Rotate OFF"
         st.success(f"✅ RIP-Optimized Fabric Length = {total/100:.2f} meters  ({mode})")
 
+        # ----- Material / waste summary (m²) -----
+        used_area  = sum(w * h for _, _, _, w, h in best)   # cm²
+        total_area = ROLL_WIDTH * total                     # cm²
+        waste_area = total_area - used_area
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Material used", f"{used_area / 10_000:.2f} m²")
+        c2.metric("Wasted space", f"{waste_area / 10_000:.2f} m²")
+        c3.metric("Utilization", f"{(used_area / total_area * 100) if total_area else 0:.1f}%")
+
         df = pd.DataFrame([(p, w, h) for p, _, _, w, h in best],
                           columns=["Panel", "Tile Width", "Tile Height"])
         st.dataframe(df, use_container_width=True)
@@ -455,6 +464,7 @@ else:
         total_pieces = sum(len(b["placed"]) for b in boards)
         used_area = sum(board_used_area(b) for b in boards)
         total_area = n_boards * BOARD_AREA
+        free_area = total_area - used_area
         util = (used_area / total_area * 100) if total_area else 0
 
         st.success(
@@ -462,10 +472,11 @@ else:
             f"{total_pieces} pieces placed  •  {util:.1f}% material used"
         )
 
-        c1, c2, c3 = st.columns(3)
+        c1, c2, c3, c4 = st.columns(4)
         c1.metric("Boards required", n_boards)
         c2.metric("Pieces placed", total_pieces)
         c3.metric("Avg utilization", f"{util:.1f}%")
+        c4.metric("Wasted space", f"{free_area / 10_000:.2f} m²")
 
         # ----- Per-graphic count check -----
         counts = {}
@@ -481,7 +492,6 @@ else:
         # ----- Fill-the-leftover suggestion -----
         # How many more of each graphic would fit into the empty space that's
         # already paid for (no extra board), so the wasted area becomes free output.
-        free_area = total_area - used_area
         if free_area > BOARD_AREA * 0.02:  # only worth suggesting if there's real space
             extra = [
                 (pid, w, h, additional_capacity(boards, w, h))
@@ -491,7 +501,7 @@ else:
             if extra:
                 st.markdown("#### 💡 Fill the leftover — free extra pieces (no new board)")
                 st.caption(
-                    f"{free_area:,.0f} cm² of empty space is already on these boards. "
+                    f"{free_area / 10_000:.2f} m² of empty space is already on these boards. "
                     "You could add up to:"
                 )
                 fill_df = pd.DataFrame(
